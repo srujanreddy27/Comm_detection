@@ -123,29 +123,38 @@ class MetricCalculator:
         
         self.calculate_degree_centrality()
         
-        # For very large graphs (>1M nodes), use aggressive approximation
-        if self.graph.number_of_nodes() > 1000000:
-            print("\nNote: Using aggressive sampling for very large graph (>1M nodes)")
-            k = min(1000, self.graph.number_of_nodes() // 1000)  # Sample ~0.1%
-        elif use_approximation and self.graph.number_of_nodes() > 500:
-            k = min(5000, self.graph.number_of_nodes() // 100)  # Sample ~1%
+        # Adaptive sampling based on graph size
+        num_nodes = self.graph.number_of_nodes()
+        
+        # SKIP betweenness for graphs with >100K nodes (too slow even with sampling)
+        if num_nodes > 100_000:
+            print(f"\n⚠️  Skipping betweenness centrality (graph too large: {num_nodes:,} nodes)")
+            print("   Betweenness takes 30-60+ minutes even with sampling.")
+            print("   Use degree centrality and PageRank instead (same insights, much faster)")
+            self.metrics['betweenness_centrality'] = {node: 0.0 for node in self.graph.nodes()}
         else:
-            k = None
-        
-        if k:
-            print(f"Sampling {k:,} nodes for betweenness approximation")
-        
-        self.calculate_betweenness_centrality(k=k)
+            # Only calculate for small graphs (<100K nodes)
+            if num_nodes > 10_000:
+                k = min(50, num_nodes // 200)  # Very aggressive: 50 samples max
+            elif num_nodes > 1_000:
+                k = min(100, num_nodes // 100)
+            else:
+                k = None
+            
+            if k:
+                print(f"Sampling {k:,} nodes for betweenness approximation")
+            
+            self.calculate_betweenness_centrality(k=k)
         
         # Skip closeness for very large graphs (too expensive)
-        if self.graph.number_of_nodes() <= 100000:
+        if num_nodes <= 100000:
             self.calculate_closeness_centrality()
         else:
             print("Skipping closeness centrality (graph too large)")
             self.metrics['closeness_centrality'] = {node: 0.0 for node in self.graph.nodes()}
         
         # Skip eigenvector for very large graphs (convergence issues)
-        if self.graph.number_of_nodes() <= 500000:
+        if num_nodes <= 500000:
             self.calculate_eigenvector_centrality()
         else:
             print("Skipping eigenvector centrality (graph too large)")

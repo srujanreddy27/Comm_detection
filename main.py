@@ -24,13 +24,23 @@ def print_banner():
     print(banner)
 
 
-def run_analysis():
-    """Run the complete analysis pipeline."""
+def run_analysis(max_edges=None):
+    """Run the complete analysis pipeline.
+    
+    Args:
+        max_edges: Maximum number of edges to load (None = all)
+                  For 8GB RAM, try max_edges=5_000_000 (5M edges)
+                  For 16GB RAM, can use full dataset
+    """
     
     # Configuration
     edges_path = "data/edges.csv"
     users_path = "data/nodes.csv"  # Updated to nodes.csv
     output_dir = "output"
+    
+    if max_edges:
+        print(f"\n⚠️  RUNNING IN LIMITED MODE: Processing first {max_edges:,} edges only")
+        print("   (Use max_edges=None to process full dataset with more RAM)\n")
     
     print("\n🚀 Starting Social Network Analysis Pipeline...\n")
     
@@ -40,7 +50,7 @@ def run_analysis():
     
     graph_constructor_module = import_module('graph_construction_02')
     constructor = graph_constructor_module.GraphConstructor(edges_path, users_path)
-    graph = constructor.build_graph()
+    graph = constructor.build_graph(max_edges=max_edges)
     
     stats = constructor.get_graph_statistics()
     print("\n✓ Graph built successfully")

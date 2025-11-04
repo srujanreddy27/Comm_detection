@@ -40,20 +40,30 @@ class GraphConstructor:
         
         return edges_df, self.user_df
     
-    def build_graph(self):
-        """Construct the directed graph from edge data."""
+    def build_graph(self, max_edges=None):
+        """Construct the directed graph from edge data.
+        
+        Args:
+            max_edges: Maximum number of edges to load (None = all edges)
+                      Use smaller value for testing or limited RAM
+        """
         print("\nConstructing graph...")
         
         edges_df, users_df = self.load_data()
+        
+        # Optionally limit edges for testing or RAM constraints
+        if max_edges and len(edges_df) > max_edges:
+            print(f"  Note: Limiting to first {max_edges:,} edges (out of {len(edges_df):,})")
+            edges_df = edges_df.head(max_edges)
         
         # Create directed graph
         print("Creating directed graph...")
         self.graph = nx.DiGraph()
         
-        # Add edges from the DataFrame
-        print("Adding edges to graph...")
-        edges = list(zip(edges_df['source'], edges_df['target']))
-        self.graph.add_edges_from(edges)
+        # Add edges from the DataFrame efficiently (avoid list conversion)
+        print(f"Adding {len(edges_df):,} edges to graph...")
+        # Use itertuples for memory efficiency - no intermediate list created
+        self.graph.add_edges_from(edges_df.itertuples(index=False, name=None))
         
         # Calculate follower/following counts from graph structure
         print("Calculating follower and following counts...")
