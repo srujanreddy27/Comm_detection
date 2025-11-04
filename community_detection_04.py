@@ -6,7 +6,7 @@ Identifies communities using Louvain and Label Propagation algorithms.
 import networkx as nx
 import igraph as ig
 from collections import Counter
-import community as community_louvain
+import community.community_louvain as community_louvain
 
 
 class CommunityDetector:
